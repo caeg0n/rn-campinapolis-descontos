@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "rn-campinapolis-descontos",
+    "slug": "rn-campinapolis-descontos",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
