@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { AppRegistry, View, Text } from "react-native";
 import { WebView } from "react-native-webview";
 import { v4 } from "uuid";
+// import ActionCable from 'action-cable-react-jwt'
 
 export default class Home extends Component {
 
