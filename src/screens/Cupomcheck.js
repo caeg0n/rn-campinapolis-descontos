@@ -1,7 +1,64 @@
-import React, { Component } from "react";
-import { AppRegistry, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { BarCodeScanner } from "expo-barcode-scanner";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { StyleSheet } from 'react-native';
+import { DEV_API_BASE_WS } from '@env'
+import { View } from "react-native";
+
+
+export default function Cupomcheck({ navigation }) {
+    const { deviceId } = useSelector((state) => state.userReducer);
+    const [permission, setPermission] = useState(null);
+    const ws = new WebSocket(DEV_API_BASE_WS + '/cable');
+
+    ws.onopen = function () {
+        let message = { "command": "subscribe", "identifier": "{\"channel\":\"ControlChannel\"}" }
+        ws.send(JSON.stringify(message))
+    }
+
+    useFocusEffect(
+        React.useCallback(() => {
+            return () => {
+                ws.close();
+            }
+        }, [])
+    );
+
+    useEffect(() => {
+        initialize();
+    }, []);
+
+    async function initialize() {
+        const { status } = await BarCodeScanner.requestPermissionsAsync();
+        setPermission({ permission: status })
+    }
+
+    async function handleBarCodeScanned({ data }) {
+        redirectToHome(data)
+    }
+
+    function redirectToHome(data) {
+        temp = { "command": "checkcupom", "device_id": deviceId, "data": data }
+        message = {
+            "command": "message",
+            "identifier": "{\"channel\":\"ControlChannel\"}",
+            "data": JSON.stringify({ message: temp })
+        }
+        ws.send(JSON.stringify(message))
+        navigation.navigate("Home")
+    }
+
+    return (
+        <View style={styles.container}>
+            <BarCodeScanner
+                onBarCodeScanned={handleBarCodeScanned}
+                style={StyleSheet.absoluteFillObject}
+            />
+        </View>
+    );
+
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -11,66 +68,39 @@ const styles = StyleSheet.create({
     },
 });
 
-export default class Cupomcheck extends Component {
-    constructor(props) {
-        super(props)
-        const { uuid } = this.props.route.params;
-        ws = new WebSocket('ws://192.168.7.94:3000/cable');
-        this.state = {
-            hasPermission: null,
-            uuid: uuid,
-        }
-        ws.onopen = function () {
-            let message = { "command": "subscribe", "identifier": "{\"channel\":\"ControlChannel\"}" }
-            ws.send(JSON.stringify(message))
-            // message = {
-            //     "command": "message",
-            //     "identifier": "{\"channel\":\"ControlChannel\"}",
-            //     "data": JSON.stringify({ message: '' })
-            // }
-            // ws.send(JSON.stringify(message))
-        }
-
-        this.initialize()
-
-        redirectToHome = function (data) {
-            temp = { "command": "checkcupom", "device": uuid, "data": data }
-            message = {
-                "command": "message",
-                "identifier": "{\"channel\":\"ControlChannel\"}",
-                "data": JSON.stringify({ message: temp })
-            }
-            ws.send(JSON.stringify(message))
-            props.navigation.navigate("Home")
-        }
-    }
-
-    componentDidMount() {
-    }
 
 
-    componentWillUnmount() {
-    }
+// AppRegistry.registerComponent('Cupomcheck', () => Cupomcheck);
 
-    async initialize() {
-        const { status } = await BarCodeScanner.requestPermissionsAsync();
-        this.setState({ hasPermission: status })
-    }
+// constructor(props) {
+//     super(props)
+//     const { uuid } = this.props.route.params;
+//     ws = new WebSocket('ws://192.168.7.94:3000/cable');
+//     this.state = {
+//         hasPermission: null,
+//         uuid: uuid,
+//     }
+//     ws.onopen = function () {
+//         let message = { "command": "subscribe", "identifier": "{\"channel\":\"ControlChannel\"}" }
+//         ws.send(JSON.stringify(message))
+//         // message = {
+//         //     "command": "message",
+//         //     "identifier": "{\"channel\":\"ControlChannel\"}",
+//         //     "data": JSON.stringify({ message: '' })
+//         // }
+//         // ws.send(JSON.stringify(message))
+//     }
 
-    async handleBarCodeScanned({ data }) {
-        this.redirectToHome(data)
-    }
+//     this.initialize()
 
-    render() {
-        return (
-            <View style={styles.container}>
-                <BarCodeScanner
-                    onBarCodeScanned={this.handleBarCodeScanned}
-                    style={StyleSheet.absoluteFillObject}
-                />
-            </View>
-        );
-    }
-}
-
-AppRegistry.registerComponent('Cupomcheck', () => Cupomcheck);
+//     redirectToHome = function (data) {
+//         temp = { "command": "checkcupom", "device": uuid, "data": data }
+//         message = {
+//             "command": "message",
+//             "identifier": "{\"channel\":\"ControlChannel\"}",
+//             "data": JSON.stringify({ message: temp })
+//         }
+//         ws.send(JSON.stringify(message))
+//         props.navigation.navigate("Home")
+//     }
+// }
