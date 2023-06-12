@@ -5,7 +5,8 @@ import { useSelector } from "react-redux";
 import { StyleSheet } from 'react-native';
 import { DEV_API_BASE_WS } from '@env'
 import { View } from "react-native";
-
+import { JWT_SECRET } from '@env'
+import JWT from 'expo-jwt';
 
 export default function Cupomcheck({ navigation }) {
     const { deviceId } = useSelector((state) => state.userReducer);
@@ -39,11 +40,13 @@ export default function Cupomcheck({ navigation }) {
     }
 
     function redirectToHome(data) {
-        temp = { "command": "checkcupom", "device_id": deviceId, "data": data }
+        temp = { "command": "checkcupon", "data": data }
+        payload = JWT.encode(temp, JWT_SECRET);
         message = {
-            "command": "message",
             "identifier": "{\"channel\":\"ControlChannel\"}",
-            "data": JSON.stringify({ message: temp })
+            "command": "message",
+            "device_id": deviceId,
+            "data": JSON.stringify({ "token": payload })
         }
         ws.send(JSON.stringify(message))
         navigation.navigate("Home")
